@@ -9,16 +9,9 @@
   <script type="text/javascript" src="https://rawcdn.githack.com/kembiricode/LK21/refs/heads/main/GoogleSheet/script.js"></script>
   <script type="text/javascript" src="https://rawcdn.githack.com/kembiricode/LK21/refs/heads/main/GoogleSheet/script2.js"></script>
   <style type="text/css">
-	  * {user-select: auto !important; -webkit-user-select: auto !important;}
+    * {user-select: auto !important; -webkit-user-select: auto !important;}
   </style>
   <input type="hidden" id="inject_idm_text_selection">
-  <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-database.js"></script>
-  <script>
-  const firebaseConfig = {
-            databaseURL: "https://xxx-xxx-default-rtdb.firebaseio.com", 
-        };
-	</script>
 </head>
 <body class="home blog">
   <div id="dt_contenedor">
@@ -50,7 +43,7 @@
             <div id="pageNumbers" style="display: inline;"></div>
             <button id="nextPage">Next</button>
           </div>
-          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -86,25 +79,48 @@
   </script>
 
   <script>
-  firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
-    const videoRef = database.ref('lk21').orderByKey();
+    // Replace this URL with your published Google Sheets CSV URL
+    const googleSheetsCsvUrl = 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/export?format=csv';
 
     let currentPage = 1;
     const itemsPerPage = 18;
     let totalVideos = 0;
     let videoDataArray = [];
 
-    videoRef.on('value', function(snapshot) {
-      videoDataArray = [];
-      snapshot.forEach(function(childSnapshot) {
-        const videoData = childSnapshot.val();
-        videoDataArray.push(videoData);
+    // Function to parse CSV data
+    function parseCSV(csvText) {
+      const lines = csvText.split('\n');
+      const headers = lines[0].split(',');
+      const result = [];
+      
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i]) continue;
+        const obj = {};
+        const currentLine = lines[i].split(',');
+        
+        for (let j = 0; j < headers.length; j++) {
+          obj[headers[j].trim()] = currentLine[j] ? currentLine[j].trim() : '';
+        }
+        result.push(obj);
+      }
+      
+      return result;
+    }
+
+    // Fetch CSV data from Google Sheets
+    fetch(googleSheetsCsvUrl)
+      .then(response => response.text())
+      .then(csvText => {
+        videoDataArray = parseCSV(csvText);
+        totalVideos = videoDataArray.length;
+        displayCurrentPage();
+        renderPageNumbers();
+      })
+      .catch(error => {
+        console.error('Error fetching CSV:', error);
+        document.getElementById('movload').style.display = 'block';
+        document.getElementById('movload').textContent = 'Error loading data';
       });
-      totalVideos = videoDataArray.length;
-      displayCurrentPage();
-      renderPageNumbers();
-    });
 
     function displayCurrentPage() {
       const videoList = document.getElementById('videoList');
@@ -127,14 +143,13 @@
       listItem.classList.add('video-item');
       listItem.innerHTML = `
         <article id="post-featured-2" class="item movies">
-  <div class="poster">
-    <img data-src="${videoData.poster}" loading="lazy" class="lazyload" alt="${videoData.title}">
-  </div>
-  <div class="data dfeatur">
-    <h3><a href="javascript:void(0);" onclick="openModal('${videoData.url}')" rel="nofollow">[${videoData.code}] ${videoData.title}</a></h3>
-  </div>
-</div>
-</article>
+          <div class="poster">
+            <img data-src="${videoData.poster}" loading="lazy" class="lazyload" alt="${videoData.title}">
+          </div>
+          <div class="data dfeatur">
+            <h3><a href="javascript:void(0);" onclick="openModal('${videoData.url}')" rel="nofollow">[${videoData.code}] ${videoData.title}</a></h3>
+          </div>
+        </article>
       `;
       videoList.appendChild(listItem);
     }
@@ -179,11 +194,11 @@
         renderPageNumbers();
       }
     });
-	
-  function openModal(url) {
+    
+    function openModal(url) {
       const modal = document.getElementById('modal');
       const iframe = document.getElementById('modal-iframe');
-      iframe.src =(url);
+      iframe.src = (url);
       modal.style.display = 'flex';
     }
 
